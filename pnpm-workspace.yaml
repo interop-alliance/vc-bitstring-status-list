@@ -1,0 +1,2 @@
+minimumReleaseAgeExclude:
+  - '@interop/ed25519-signature@7.0.1'
