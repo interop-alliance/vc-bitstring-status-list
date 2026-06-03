@@ -1,11 +1,14 @@
-# @digitalbazaar/vc-bitstring-status-list
+# @interop/vc-bitstring-status-list
+
+[![CI](https://github.com/interop-alliance/vc-bitstring-status-list/workflows/CI/badge.svg)](https://github.com/interop-alliance/vc-bitstring-status-list/actions?query=workflow%3ACI)
+[![NPM Version](https://img.shields.io/npm/v/@interop/vc-bitstring-status-list)](https://www.npmjs.com/package/@interop/vc-bitstring-status-list)
 
 [Verifiable Credential Bitstring Status List](https://github.com/w3c/vc-bitstring-status-list/)
 
 ## Install
 
 ```sh
-npm install @digitalbazaar/vc-bitstring-status-list
+npm install @interop/vc-bitstring-status-list
 ```
 
 ## Usage
@@ -18,7 +21,7 @@ import {
   createCredential,
   VC_BSL_VC_V1_CONTEXT,
   VC_BSL_VC_V2_CONTEXT
-} from '@digitalbazaar/vc-bitstring-status-list'
+} from '@interop/vc-bitstring-status-list'
 import { documentLoader } from './path-to/document-loader.js'
 import { Ed25519Signature2020 } from '@interop/ed25519-signature'
 import { Ed25519VerificationKey } from '@interop/ed25519-verification-key'
@@ -101,3 +104,14 @@ pnpm run test-browser  # playwright (chromium smoke test)
 
 Run `pnpm exec playwright install --with-deps chromium` once before
 `test-browser`.
+
+## Contribute
+
+PRs accepted.
+
+If editing the Readme, please conform to the
+[standard-readme](https://github.com/RichardLitt/standard-readme) specification.
+
+## License
+
+[New BSD License (3-clause)](LICENSE) © Interop Alliance and Digital Bazaar

@@ -1,5 +1,5 @@
 {
-  "name": "@digitalbazaar/vc-bitstring-status-list",
+  "name": "@interop/vc-bitstring-status-list",
   "version": "2.0.2-0",
   "description": "Verifiable Credentials Bitstring Status List",
   "license": "BSD-3-Clause",
@@ -61,7 +61,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/digitalbazaar/vc-bitstring-status-list"
+    "url": "https://github.com/interop-alliance/vc-bitstring-status-list"
   },
   "keywords": [
     "vc",
@@ -78,9 +78,9 @@
     "url": "https://digitalbazaar.com/"
   },
   "bugs": {
-    "url": "https://github.com/digitalbazaar/vc-bitstring-status-list/issues"
+    "url": "https://github.com/interop-alliance/vc-bitstring-status-list/issues"
   },
-  "homepage": "https://github.com/digitalbazaar/vc-bitstring-status-list",
+  "homepage": "https://github.com/interop-alliance/vc-bitstring-status-list",
   "engines": {
     "node": ">=24.0"
   },

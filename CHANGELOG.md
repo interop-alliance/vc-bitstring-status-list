@@ -1,9 +1,10 @@
-# @digitalbazaar/vc-bitstring-status-list ChangeLog
+# @interop/vc-bitstring-status-list ChangeLog
 
-## 2.0.2 - TBD
+## 3.0.0 - TBD
 
 ### Changed
 
+- **BREAKING**: Fork, rename to `@interop/vc-bitstring-status-list`.
 - **BREAKING**: Replaced the runtime `@digitalbazaar/vc` dependency with its
   TypeScript fork `@interop/vc`.
 - Converted the library source to TypeScript; the package now publishes compiled
@@ -12,9 +13,6 @@
 - Migrated project infrastructure to the `isomorphic-lib-template`: pnpm,
   Prettier, flat-config ESLint, `tsc` build, Vitest (Node) and Playwright
   (browser smoke) test runners.
-
-### Removed
-
 - Dropped the Codecov coverage upload; coverage is now produced locally via
   Vitest v8 (`lcov`).
 
