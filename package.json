@@ -1,6 +1,6 @@
 {
   "name": "@interop/vc-bitstring-status-list",
-  "version": "3.0.0",
+  "version": "3.0.1",
   "description": "Verifiable Credentials Bitstring Status List",
   "license": "BSD-3-Clause",
   "type": "module",
