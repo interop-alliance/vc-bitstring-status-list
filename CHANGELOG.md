@@ -1,5 +1,11 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.0.2 - 2026-06-06
+
+### Added
+
+- Add default export to `package.json`.
+
 ## 3.0.0-3.0.1 - 2026-06-03
 
 ### Changed
