@@ -1,2 +1,8 @@
 minimumReleaseAgeExclude:
-  - '@interop/ed25519-signature@7.0.1'
+  - '@interop/data-integrity-proof@3.4.0'
+  - '@interop/did-io@4.0.5'
+  - '@interop/did-method-key@7.3.2'
+  - '@interop/did-web-resolver@6.2.2'
+  - '@interop/ed25519-signature@7.1.2'
+  - '@interop/security-document-loader@9.3.1'
+  - '@interop/vc@11.0.4'
