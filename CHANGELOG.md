@@ -1,5 +1,11 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.0.4 - 2026-06-28
+
+### Changed
+
+- Update to latest `@interop/` deps.
+
 ## 3.0.3 - 2026-06-13
 
 ### Changed
