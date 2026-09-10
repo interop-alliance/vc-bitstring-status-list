@@ -1,5 +1,10 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.0.7 - TBD
+
+### Changed
+- Update to latest ed25519 key dep (`didKeySigner()`).
+
 ## 3.0.6 - 2026-09-05
 
 ### Changed
