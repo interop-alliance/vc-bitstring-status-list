@@ -1,6 +1,6 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
-## 3.0.8 - TBD
+## 3.0.8 - 2026-09-25
 
 ### Changed
 - Update to latest `@interop/data-integrity-core@8.8.0`.
