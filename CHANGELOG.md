@@ -1,6 +1,6 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
-## 3.0.10 - TBD
+## 3.0.10 - 2026-09-28
 
 ### Changed
 - Update to latest did-io.
