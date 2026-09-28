@@ -1,5 +1,10 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.0.9 - TBD
+
+### Changed
+- Update to latest vc dep.
+
 ## 3.0.8 - 2026-09-25
 
 ### Changed
