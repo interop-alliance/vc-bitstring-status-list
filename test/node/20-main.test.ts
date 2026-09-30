@@ -371,7 +371,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.error).toBeUndefined()
     expect(result.verified).toBe(true)
@@ -386,7 +386,7 @@ describe('checkStatus', () => {
     ])
   })
 
-  it('should use default value when "verifyStatusListCredential" is not specified', async () => {
+  it('should use default value when "verifyBitstringStatusListCredential" is not specified', async () => {
     const statusVC = await createMockBitstringStatusListCredential({
       statusPurpose: 'revocation',
       documentLoader
@@ -455,7 +455,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -497,14 +497,14 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
     expect(result.error.cause.errors[0].message).toBe('Invalid signature.')
   })
 
-  it('should verify with an invalid status list vc when "verifyStatusListCredential" is set to "false"', async () => {
+  it('should verify with an invalid status list vc when "verifyBitstringStatusListCredential" is set to "false"', async () => {
     const statusVC = await createMockBitstringStatusListCredential({
       statusPurpose: 'revocation',
       documentLoader
@@ -543,6 +543,140 @@ describe('checkStatus', () => {
     expect(result.verified).toBe(true)
   })
 
+  it('should use an injected status list credential verifier', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        VC_BSL_V1_CONTEXT_URL
+      ],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41',
+        'example:test': 'foo'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: 'BitstringStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    const seen: any[] = []
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyStatusListCredential: async ({ credential }) => {
+        seen.push(credential)
+        return { verified: true }
+      }
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.verified).toBe(true)
+    expect(seen).toHaveLength(1)
+    expect(seen[0].id).toBe(statusVC.id)
+  })
+
+  it('should fail when injected verifier rejects the status list', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        VC_BSL_V1_CONTEXT_URL
+      ],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41',
+        'example:test': 'foo'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: 'BitstringStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyStatusListCredential: async () => ({
+        verified: false,
+        error: new Error('bad proof')
+      })
+    })
+    expect(result.verified).toBe(false)
+    expect(result.error.message).toBe(
+      '"BitstringStatusListCredential" not verified; reason: bad proof'
+    )
+    expect(result.error.cause.message).toBe('bad proof')
+  })
+
+  it('should skip injected verifier when verification is disabled', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        VC_BSL_V1_CONTEXT_URL
+      ],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41',
+        'example:test': 'foo'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: 'BitstringStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    let called = false
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyBitstringStatusListCredential: false,
+      verifyStatusListCredential: async () => {
+        called = true
+        return { verified: false }
+      }
+    })
+    expect(result.verified).toBe(true)
+    expect(called).toBe(false)
+  })
+
+  it('should reject a non-function verifyStatusListCredential', async () => {
+    const result: any = await checkStatus({
+      credential: { credentialStatus: {} },
+      documentLoader,
+      verifyStatusListCredential: 'nope' as any
+    })
+    expect(result.verified).toBe(false)
+    expect(result.error.message).toBe(
+      '"verifyStatusListCredential" must be a function.'
+    )
+  })
+
   it('should verify one status of a credential', async () => {
     const statusVC = await createMockBitstringStatusListCredential({
       statusPurpose: 'revocation',
@@ -574,7 +708,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.error).toBeUndefined()
     expect(result.verified).toBe(true)
@@ -613,7 +747,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.error).toBeDefined()
     expect(result.error.message).toBe(
@@ -673,7 +807,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.error).toBeUndefined()
     expect(result.verified).toBe(true)
@@ -709,7 +843,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -768,7 +902,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.error).toBeUndefined()
     expect(result.verified).toBe(true)
@@ -804,7 +938,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -841,7 +975,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -880,7 +1014,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -921,7 +1055,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -1020,7 +1154,7 @@ describe('checkStatus', () => {
       credential,
       documentLoader,
       suite,
-      verifyStatusListCredential: false
+      verifyBitstringStatusListCredential: false
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -1068,7 +1202,7 @@ describe('checkStatus', () => {
       credential,
       documentLoader,
       suite,
-      verifyStatusListCredential: false
+      verifyBitstringStatusListCredential: false
     } as any)
     expect(result.verified).toBe(false)
     expect(result.error).toBeDefined()
@@ -1082,7 +1216,7 @@ describe('checkStatus', () => {
     const result: any = await checkStatus({
       suite,
       documentLoader,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
     expect(result).toBeDefined()
     expect(typeof result).toBe('object')
@@ -1123,7 +1257,7 @@ describe('checkStatus', () => {
       suite,
       credential,
       documentLoader: documentLoader2,
-      verifyStatusListCredential: true
+      verifyBitstringStatusListCredential: true
     } as any)
 
     expect(result).toBeDefined()
@@ -1170,7 +1304,7 @@ describe('checkStatus', () => {
         credential,
         documentLoader,
         suite,
-        verifyStatusListCredential: true
+        verifyBitstringStatusListCredential: true
       } as any)
     } catch (e) {
       err = e
@@ -1219,13 +1353,13 @@ describe('checkStatus', () => {
     let result: any
     try {
       // `SLC` is not a valid status list credential, so any call with
-      // `verifyStatusListCredential: true` with a credential that references
+      // `verifyBitstringStatusListCredential: true` with a credential that references
       // `SLC.id` will always fail
       result = await checkStatus({
         credential,
         documentLoader,
         suite: {},
-        verifyStatusListCredential: true
+        verifyBitstringStatusListCredential: true
       } as any)
     } catch (e) {
       err = e
@@ -1271,7 +1405,7 @@ describe('checkStatus', () => {
       suite,
       credential,
       documentLoader,
-      verifyStatusListCredential: true,
+      verifyBitstringStatusListCredential: true,
       verifyMatchingIssuers: true
     } as any)
     expect(result.verified).toBe(false)
@@ -1316,7 +1450,7 @@ describe('checkStatus', () => {
       credential,
       suite,
       documentLoader,
-      verifyStatusListCredential: true,
+      verifyBitstringStatusListCredential: true,
       // this flag is set to allow different values for credential.issuer and
       // SLC.issuer
       verifyMatchingIssuers: false
