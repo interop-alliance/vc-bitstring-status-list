@@ -665,6 +665,63 @@ describe('checkStatus', () => {
     expect(called).toBe(false)
   })
 
+  it('should load and verify a shared status list URL once for two entries', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        VC_BSL_V1_CONTEXT_URL
+      ],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41',
+        'example:test': 'foo'
+      },
+      credentialStatus: [
+        {
+          id: 'https://example.com/status/1#67342',
+          type: 'BitstringStatusListEntry',
+          statusPurpose: 'revocation',
+          statusListIndex: '67342',
+          statusListCredential: statusVC.id
+        },
+        {
+          id: 'https://example.com/status/1#100',
+          type: 'BitstringStatusListEntry',
+          statusPurpose: 'revocation',
+          statusListIndex: '100',
+          statusListCredential: statusVC.id
+        }
+      ],
+      issuer: statusVC.issuer
+    }
+    let loads = 0
+    let verifications = 0
+    const result: any = await checkStatus({
+      credential,
+      documentLoader: async (url: string) => {
+        if (url === statusVC.id) {
+          loads++
+        }
+        return documentLoader(url)
+      },
+      verifyStatusListCredential: async () => {
+        verifications++
+        return { verified: true }
+      }
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.verified).toBe(true)
+    expect(result.results).toHaveLength(2)
+    expect(loads).toBe(1)
+    expect(verifications).toBe(1)
+  })
+
   it('should reject a non-function verifyStatusListCredential', async () => {
     const result: any = await checkStatus({
       credential: { credentialStatus: {} },

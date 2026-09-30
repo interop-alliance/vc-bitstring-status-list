@@ -1,5 +1,14 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.2.0 - TBD
+
+### Changed
+
+- `checkStatus()` loads and verifies each distinct `statusListCredential` URL
+  once per call. Several `credentialStatus` entries naming the same list (for
+  example revocation and suspension on one list) share the fetched and verified
+  list credential.
+
 ## 3.1.0 - 2026-09-30
 
 ### Added

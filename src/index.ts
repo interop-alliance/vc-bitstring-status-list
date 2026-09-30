@@ -263,32 +263,32 @@ export function getCredentialStatus({
   return result
 }
 
-async function _checkStatus({
+/**
+ * Load, verify, and decode one status list credential. Called once per
+ * distinct `statusListCredential` URL per `checkStatus` call; the result is
+ * shared by every `credentialStatus` entry naming that URL.
+ */
+async function _loadStatusList({
+  url,
   credential,
-  credentialStatus,
   verifyBitstringStatusListCredential,
   verifyStatusListCredential,
   verifyMatchingIssuers,
   suite,
   documentLoader
 }: {
+  url: string
   credential: any
-  credentialStatus: any
   verifyBitstringStatusListCredential?: boolean
   verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
   suite?: any
   documentLoader: DocumentLoader
-}): Promise<any> {
-  // get SL position
-  const { statusListIndex } = credentialStatus
-  const index = parseInt(statusListIndex, 10)
+}): Promise<{ slCredential: any; list: BitstringStatusList }> {
   // retrieve SL VC
   let slCredential: any
   try {
-    ;({ document: slCredential } = await documentLoader(
-      credentialStatus.statusListCredential
-    ))
+    ;({ document: slCredential } = await documentLoader(url))
   } catch (e) {
     const err: any = new Error(
       'Could not load "BitstringStatusListCredential"; ' +
@@ -296,16 +296,6 @@ async function _checkStatus({
     )
     err.cause = e
     throw err
-  }
-  const { statusPurpose: credentialStatusPurpose } = credentialStatus
-  const { statusPurpose: slCredentialStatusPurpose } =
-    slCredential.credentialSubject
-  if (slCredentialStatusPurpose !== credentialStatusPurpose) {
-    throw new Error(
-      `The status purpose "${slCredentialStatusPurpose}" of the status ` +
-        `list credential does not match the status purpose ` +
-        `"${credentialStatusPurpose}" in the credential.`
-    )
   }
   // verify SL VC
   if (verifyBitstringStatusListCredential) {
@@ -375,6 +365,34 @@ async function _checkStatus({
   // decode list from SL VC
   const { encodedList } = sl
   const list = await decodeList({ encodedList })
+  return { slCredential, list }
+}
+
+async function _checkStatus({
+  credentialStatus,
+  loadStatusList
+}: {
+  credentialStatus: any
+  loadStatusList: (
+    url: string
+  ) => Promise<{ slCredential: any; list: BitstringStatusList }>
+}): Promise<any> {
+  // get SL position
+  const { statusListIndex } = credentialStatus
+  const index = parseInt(statusListIndex, 10)
+  const { slCredential, list } = await loadStatusList(
+    credentialStatus.statusListCredential
+  )
+  const { statusPurpose: credentialStatusPurpose } = credentialStatus
+  const { statusPurpose: slCredentialStatusPurpose } =
+    slCredential.credentialSubject
+  if (slCredentialStatusPurpose !== credentialStatusPurpose) {
+    throw new Error(
+      `The status purpose "${slCredentialStatusPurpose}" of the status ` +
+        `list credential does not match the status purpose ` +
+        `"${credentialStatusPurpose}" in the credential.`
+    )
+  }
 
   // return the status value at index
   const status = list.getStatus(index)
@@ -426,17 +444,28 @@ async function _checkStatuses({
   credentialStatuses.forEach(credentialStatus =>
     _validateStatus({ credentialStatus })
   )
-  const results = await Promise.all(
-    credentialStatuses.map(credentialStatus =>
-      _checkStatus({
+  // Load and verify each distinct status list once, even when several
+  // entries (e.g. revocation and suspension) name the same URL.
+  const loads = new Map<string, ReturnType<typeof _loadStatusList>>()
+  const loadStatusList = (url: string) => {
+    let load = loads.get(url)
+    if (!load) {
+      load = _loadStatusList({
+        url,
         credential,
-        credentialStatus,
         suite,
         documentLoader,
         verifyBitstringStatusListCredential,
         verifyStatusListCredential,
         verifyMatchingIssuers
       })
+      loads.set(url, load)
+    }
+    return load
+  }
+  const results = await Promise.all(
+    credentialStatuses.map(credentialStatus =>
+      _checkStatus({ credentialStatus, loadStatusList })
     )
   )
   const verified = results.every(
