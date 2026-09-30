@@ -1,33 +1,47 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.1.0 - TBD
+
+### Added
+
+- `checkStatus()` accepts an optional `verifyStatusListCredential` hook that
+  replaces the built-in `verifyCredential` call for the fetched status list
+  credential. When passed, `suite` is not required.
+
 ## 3.0.10 - 2026-09-28
 
 ### Changed
+
 - Update to latest did-io.
 
 ## 3.0.9 - 2026-09-27
 
 ### Changed
+
 - Update to latest vc dep.
 
 ## 3.0.8 - 2026-09-25
 
 ### Changed
+
 - Update to latest `@interop/data-integrity-core@8.8.0`.
 
 ## 3.0.7 - 2026-09-10
 
 ### Changed
+
 - Update to latest ed25519 key dep (`didKeySigner()`).
 
 ## 3.0.6 - 2026-09-05
 
 ### Changed
+
 - Update to latest key deps.
 
 ## 3.0.5 - 2026-08-18
 
 ### Changed
+
 - Update to latest `@interop/data-integrity-core@8.7.1`.
 
 ## 3.0.4 - 2026-06-28

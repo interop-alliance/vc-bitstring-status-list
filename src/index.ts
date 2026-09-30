@@ -16,6 +16,16 @@ export { BitstringStatusList }
 
 type DocumentLoader = (url: string) => Promise<{ document: any }>
 
+/**
+ * Verifies the proof on a fetched `BitstringStatusListCredential`. When
+ * passed to `checkStatus`, replaces the built-in `verifyCredential` call
+ * so consumers can plug in their own crypto layer.
+ */
+export type VerifyStatusListCredential = (options: {
+  credential: any
+  documentLoader: DocumentLoader
+}) => Promise<{ verified: boolean; error?: Error }>
+
 interface BitstringStatusListCredential {
   '@context': string[]
   id: string
@@ -85,12 +95,10 @@ export async function createCredential({
   }
   if (!context) {
     context = [...VC_BSL_VC_V2_CONTEXT]
-  } else if (
-    !(
-      context.every((e, i) => e === VC_BSL_VC_V1_CONTEXT[i]) ||
-      context.every((e, i) => e === VC_BSL_VC_V2_CONTEXT[i])
-    )
-  ) {
+  } else if (!(
+    context.every((e, i) => e === VC_BSL_VC_V1_CONTEXT[i]) ||
+    context.every((e, i) => e === VC_BSL_VC_V2_CONTEXT[i])
+  )) {
     throw new TypeError(
       `"context" must be either "${VC_BSL_VC_V1_CONTEXT}" ` +
         `or "${VC_BSL_VC_V2_CONTEXT}".`
@@ -115,12 +123,14 @@ export async function checkStatus({
   documentLoader,
   suite,
   verifyBitstringStatusListCredential = true,
+  verifyStatusListCredential,
   verifyMatchingIssuers = true
 }: {
   credential?: any
   documentLoader?: DocumentLoader
   suite?: any
   verifyBitstringStatusListCredential?: boolean
+  verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
 } = {}): Promise<CheckStatusResult> {
   let result
@@ -130,6 +140,7 @@ export async function checkStatus({
       documentLoader,
       suite,
       verifyBitstringStatusListCredential,
+      verifyStatusListCredential,
       verifyMatchingIssuers
     })
   } catch (error) {
@@ -224,12 +235,10 @@ export function getCredentialStatus({
     throw new TypeError('"statusPurpose" must be a string.')
   }
   // get and validate status
-  if (
-    !(
-      credential.credentialStatus &&
-      typeof credential.credentialStatus === 'object'
-    )
-  ) {
+  if (!(
+    credential.credentialStatus &&
+    typeof credential.credentialStatus === 'object'
+  )) {
     throw new Error('"credentialStatus" is missing or invalid.')
   }
   const credentialStatuses = _getStatuses({ credential })
@@ -258,6 +267,7 @@ async function _checkStatus({
   credential,
   credentialStatus,
   verifyBitstringStatusListCredential,
+  verifyStatusListCredential,
   verifyMatchingIssuers,
   suite,
   documentLoader
@@ -265,6 +275,7 @@ async function _checkStatus({
   credential: any
   credentialStatus: any
   verifyBitstringStatusListCredential?: boolean
+  verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
   suite?: any
   documentLoader: DocumentLoader
@@ -298,11 +309,16 @@ async function _checkStatus({
   }
   // verify SL VC
   if (verifyBitstringStatusListCredential) {
-    const verifyResult = await vcVerifyCredential({
-      credential: slCredential,
-      suite,
-      documentLoader
-    })
+    const verifyResult = verifyStatusListCredential
+      ? await verifyStatusListCredential({
+          credential: slCredential,
+          documentLoader
+        })
+      : await vcVerifyCredential({
+          credential: slCredential,
+          suite,
+          documentLoader
+        })
     if (!verifyResult.verified) {
       const { error: e } = verifyResult
       let msg = '"BitstringStatusListCredential" not verified'
@@ -370,12 +386,14 @@ async function _checkStatuses({
   documentLoader,
   suite,
   verifyBitstringStatusListCredential,
+  verifyStatusListCredential,
   verifyMatchingIssuers
 }: {
   credential?: any
   documentLoader?: DocumentLoader
   suite?: any
   verifyBitstringStatusListCredential?: boolean
+  verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
 }): Promise<any> {
   _isObject({ credential })
@@ -383,7 +401,14 @@ async function _checkStatuses({
     throw new TypeError('"documentLoader" must be a function.')
   }
   if (
+    verifyStatusListCredential !== undefined &&
+    typeof verifyStatusListCredential !== 'function'
+  ) {
+    throw new TypeError('"verifyStatusListCredential" must be a function.')
+  }
+  if (
     verifyBitstringStatusListCredential &&
+    !verifyStatusListCredential &&
     !(
       suite &&
       (isArrayOfObjects(suite) ||
@@ -409,6 +434,7 @@ async function _checkStatuses({
         suite,
         documentLoader,
         verifyBitstringStatusListCredential,
+        verifyStatusListCredential,
         verifyMatchingIssuers
       })
     )

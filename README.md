@@ -90,6 +90,33 @@ let verifiableCredential = await issue({
 })
 ```
 
+### Checking status with an injected verifier
+
+By default, `checkStatus` verifies the fetched status list credential with
+`verifyCredential` from `@interop/vc` and the `suite` you pass. To verify the
+proof through your own crypto layer instead, pass a `verifyStatusListCredential`
+hook. When present it replaces the built-in call, and `suite` is not needed.
+Loading, purpose matching, type checks and bitstring decoding stay inside the
+library.
+
+```js
+import { checkStatus } from '@interop/vc-bitstring-status-list'
+
+const result = await checkStatus({
+  credential: verifiableCredential,
+  documentLoader,
+  verifyStatusListCredential: async ({ credential, documentLoader }) => {
+    const { verified, error } = await myVerifier.verify(credential, {
+      documentLoader
+    })
+    return { verified, error }
+  }
+})
+```
+
+Setting `verifyBitstringStatusListCredential: false` skips proof verification
+entirely, whether or not a hook is passed.
+
 ## Develop
 
 This package uses [pnpm](https://pnpm.io/) and is written in TypeScript.
