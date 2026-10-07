@@ -1,5 +1,11 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.2.1 - TBD
+
+### Changed
+
+- Update to latest vc dep (jsigs term).
+
 ## 3.2.0 - 2026-09-30
 
 ### Changed
