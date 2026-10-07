@@ -1,6 +1,6 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
-## 3.2.1 - TBD
+## 3.2.1 - 2026-10-07
 
 ### Changed
 
