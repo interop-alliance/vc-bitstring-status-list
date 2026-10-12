@@ -39,14 +39,14 @@
     "@digitalbazaar/bitstring": "^3.1.0",
     "@digitalbazaar/credentials-context": "^3.2.0",
     "@digitalbazaar/vc-bitstring-status-list-context": "^1.1.0",
-    "@interop/vc": "^11.0.12"
+    "@interop/vc": "^11.1.2"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@interop/did-method-key": "^7.4.4",
-    "@interop/ed25519-signature": "^7.2.3",
-    "@interop/ed25519-verification-key": "^8.2.1",
-    "@interop/security-document-loader": "^10.1.4",
+    "@interop/did-method-key": "^7.5.1",
+    "@interop/ed25519-signature": "^7.2.5",
+    "@interop/ed25519-verification-key": "^8.2.2",
+    "@interop/security-document-loader": "^10.1.5",
     "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.1",
     "@vitest/coverage-v8": "^4.1.7",

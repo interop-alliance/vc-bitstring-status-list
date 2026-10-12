@@ -1,5 +1,11 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.4.1 - TBD
+
+### Changed
+
+- Update to latest jsigs and di core.
+
 ## 3.4.0 - 2026-10-11
 
 ### Changed
