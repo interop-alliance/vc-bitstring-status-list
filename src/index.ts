@@ -16,14 +16,18 @@ export { BitstringStatusList }
 
 type DocumentLoader = (url: string) => Promise<{ document: any }>
 
+const BSL_ENTRY_TYPE = 'BitstringStatusListEntry'
+
 /**
  * Verifies the proof on a fetched `BitstringStatusListCredential`. When
  * passed to `checkStatus`, replaces the built-in `verifyCredential` call
- * so consumers can plug in their own crypto layer.
+ * so consumers can plug in their own crypto layer. `url` is the
+ * `statusListCredential` the document was loaded from.
  */
 export type VerifyStatusListCredential = (options: {
   credential: any
   documentLoader: DocumentLoader
+  url: string
 }) => Promise<{ verified: boolean; error?: Error }>
 
 interface BitstringStatusListCredential {
@@ -118,10 +122,16 @@ export async function createCredential({
   }
 }
 
+/**
+ * Checks every `BitstringStatusListEntry` of `credential`. With
+ * `statusPurposes`, only entries whose `statusPurpose` is listed are
+ * checked; the others are ignored and their lists are not loaded.
+ */
 export async function checkStatus({
   credential,
   documentLoader,
   suite,
+  statusPurposes,
   verifyBitstringStatusListCredential = true,
   verifyStatusListCredential,
   verifyMatchingIssuers = true
@@ -129,6 +139,7 @@ export async function checkStatus({
   credential?: any
   documentLoader?: DocumentLoader
   suite?: any
+  statusPurposes?: string[]
   verifyBitstringStatusListCredential?: boolean
   verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
@@ -139,6 +150,7 @@ export async function checkStatus({
       credential,
       documentLoader,
       suite,
+      statusPurposes,
       verifyBitstringStatusListCredential,
       verifyStatusListCredential,
       verifyMatchingIssuers
@@ -302,7 +314,8 @@ async function _loadStatusList({
     const verifyResult = verifyStatusListCredential
       ? await verifyStatusListCredential({
           credential: slCredential,
-          documentLoader
+          documentLoader,
+          url
         })
       : await vcVerifyCredential({
           credential: slCredential,
@@ -403,6 +416,7 @@ async function _checkStatuses({
   credential,
   documentLoader,
   suite,
+  statusPurposes,
   verifyBitstringStatusListCredential,
   verifyStatusListCredential,
   verifyMatchingIssuers
@@ -410,6 +424,7 @@ async function _checkStatuses({
   credential?: any
   documentLoader?: DocumentLoader
   suite?: any
+  statusPurposes?: string[]
   verifyBitstringStatusListCredential?: boolean
   verifyStatusListCredential?: VerifyStatusListCredential
   verifyMatchingIssuers?: boolean
@@ -435,10 +450,28 @@ async function _checkStatuses({
   ) {
     throw new TypeError('"suite" must be an object or an array of objects.')
   }
-  const credentialStatuses = _getStatuses({ credential })
-  if (credentialStatuses.length === 0) {
+  if (
+    statusPurposes !== undefined &&
+    !(
+      Array.isArray(statusPurposes) &&
+      statusPurposes.every(p => typeof p === 'string')
+    )
+  ) {
+    throw new TypeError('"statusPurposes" must be an array of strings.')
+  }
+  const allStatuses = _getStatuses({ credential })
+  if (allStatuses.length === 0) {
     throw new Error(
       '"credentialStatus.type" must be "BitstringStatusListEntry".'
+    )
+  }
+  const credentialStatuses = statusPurposes
+    ? allStatuses.filter(cs => statusPurposes.includes(cs.statusPurpose))
+    : allStatuses
+  if (credentialStatuses.length === 0) {
+    throw new Error(
+      `No "${BSL_ENTRY_TYPE}" with a status purpose in ` +
+        `"${statusPurposes}" found.`
     )
   }
   credentialStatuses.forEach(credentialStatus =>
@@ -488,7 +521,7 @@ async function _checkStatuses({
  * @returns {object} A credentialStatus.
  */
 function _validateStatus({ credentialStatus }: { credentialStatus: any }): any {
-  if (credentialStatus.type !== 'BitstringStatusListEntry') {
+  if (!_isBitstringEntry(credentialStatus)) {
     throw new Error(
       '"credentialStatus.type" must be "BitstringStatusListEntry".'
     )
@@ -534,6 +567,21 @@ function _isObject({ credential }: { credential?: any }): void {
 }
 
 /**
+ * Whether a `credentialStatus` entry is a `BitstringStatusListEntry`. The
+ * `type` may be the string or a one-element array holding it.
+ */
+function _isBitstringEntry(credentialStatus: any): boolean {
+  if (!(credentialStatus && typeof credentialStatus === 'object')) {
+    return false
+  }
+  const { type } = credentialStatus
+  if (Array.isArray(type)) {
+    return type.length === 1 && type[0] === BSL_ENTRY_TYPE
+  }
+  return type === BSL_ENTRY_TYPE
+}
+
+/**
  * Gets the statuses of a credential.
  *
  * @param {object} options - Options to use.
@@ -546,12 +594,9 @@ function _isObject({ credential }: { credential?: any }): void {
 function _getStatuses({ credential }: { credential: any }): any[] {
   const { credentialStatus } = credential
   if (Array.isArray(credentialStatus)) {
-    return credentialStatus.filter(cs => cs.type === 'BitstringStatusListEntry')
+    return credentialStatus.filter(_isBitstringEntry)
   }
-  if (
-    credentialStatus &&
-    credentialStatus.type === 'BitstringStatusListEntry'
-  ) {
+  if (_isBitstringEntry(credentialStatus)) {
     return [credentialStatus]
   }
   return []

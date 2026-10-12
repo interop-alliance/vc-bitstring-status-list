@@ -105,7 +105,7 @@ import { checkStatus } from '@interop/vc-bitstring-status-list'
 const result = await checkStatus({
   credential: verifiableCredential,
   documentLoader,
-  verifyStatusListCredential: async ({ credential, documentLoader }) => {
+  verifyStatusListCredential: async ({ credential, documentLoader, url }) => {
     const { verified, error } = await myVerifier.verify(credential, {
       documentLoader
     })
@@ -114,8 +114,27 @@ const result = await checkStatus({
 })
 ```
 
+The hook also receives `url`, the `statusListCredential` the document was loaded
+from.
+
 Setting `verifyBitstringStatusListCredential: false` skips proof verification
 entirely, whether or not a hook is passed.
+
+### Checking only some status purposes
+
+By default every `BitstringStatusListEntry` is checked, whatever its
+`statusPurpose`. Pass `statusPurposes` to check only the listed purposes; other
+entries are ignored and their lists are not loaded. An entry's `type` may be the
+string `BitstringStatusListEntry` or a one-element array holding it.
+
+```js
+const result = await checkStatus({
+  credential: verifiableCredential,
+  documentLoader,
+  statusPurposes: ['revocation', 'suspension'],
+  verifyStatusListCredential
+})
+```
 
 ## Develop
 

@@ -1,5 +1,19 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.3.0 - TBD
+
+### Added
+
+- `checkStatus()` accepts `statusPurposes`, a list of `statusPurpose` values to
+  check. Entries for other purposes are ignored and their lists are not loaded.
+- The `verifyStatusListCredential` hook receives `url`, the
+  `statusListCredential` the document was loaded from.
+
+### Changed
+
+- A `credentialStatus` entry whose `type` is a one-element array holding
+  `BitstringStatusListEntry` is accepted as a Bitstring entry.
+
 ## 3.2.1 - 2026-10-07
 
 ### Changed

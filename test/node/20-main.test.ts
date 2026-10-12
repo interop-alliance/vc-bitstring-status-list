@@ -722,6 +722,168 @@ describe('checkStatus', () => {
     expect(verifications).toBe(1)
   })
 
+  it('should pass the list URL to the injected verifier', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': [
+        'https://www.w3.org/2018/credentials/v1',
+        VC_BSL_V1_CONTEXT_URL
+      ],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41',
+        'example:test': 'foo'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: 'BitstringStatusListEntry',
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    const urls: string[] = []
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyStatusListCredential: async ({ url }) => {
+        urls.push(url)
+        return { verified: true }
+      }
+    })
+    expect(result.error).toBeUndefined()
+    expect(urls).toEqual([statusVC.id])
+  })
+
+  it('should check only the entries whose purpose is in "statusPurposes"', async () => {
+    const revocationVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(revocationVC.id, revocationVC)
+    const credential = {
+      '@context': ['https://www.w3.org/ns/credentials/v2'],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41'
+      },
+      credentialStatus: [
+        {
+          id: 'https://example.com/status/1#67342',
+          type: 'BitstringStatusListEntry',
+          statusPurpose: 'revocation',
+          statusListIndex: '67342',
+          statusListCredential: revocationVC.id
+        },
+        {
+          id: 'https://example.com/status/refresh#5',
+          type: 'BitstringStatusListEntry',
+          statusPurpose: 'refresh',
+          statusListIndex: '5',
+          statusListCredential: 'https://example.com/status/refresh'
+        }
+      ],
+      issuer: revocationVC.issuer
+    }
+    const loaded: string[] = []
+    const result: any = await checkStatus({
+      credential,
+      documentLoader: async (url: string) => {
+        loaded.push(url)
+        return documentLoader(url)
+      },
+      statusPurposes: ['revocation', 'suspension'],
+      verifyStatusListCredential: async () => ({ verified: true })
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.verified).toBe(true)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0].credentialStatus.statusPurpose).toBe('revocation')
+    expect(loaded).toEqual([revocationVC.id])
+  })
+
+  it('should fail when no entry matches "statusPurposes"', async () => {
+    const credential = {
+      '@context': ['https://www.w3.org/ns/credentials/v2'],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/refresh#5',
+        type: 'BitstringStatusListEntry',
+        statusPurpose: 'refresh',
+        statusListIndex: '5',
+        statusListCredential: 'https://example.com/status/refresh'
+      },
+      issuer: 'did:example:issuer'
+    }
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      statusPurposes: ['revocation'],
+      verifyStatusListCredential: async () => ({ verified: true })
+    })
+    expect(result.verified).toBe(false)
+    expect(result.error.message).toBe(
+      'No "BitstringStatusListEntry" with a status purpose in "revocation" found.'
+    )
+  })
+
+  it('should reject a non-array "statusPurposes"', async () => {
+    const result: any = await checkStatus({
+      credential: { credentialStatus: {} },
+      documentLoader,
+      statusPurposes: 'revocation' as any,
+      verifyStatusListCredential: async () => ({ verified: true })
+    })
+    expect(result.verified).toBe(false)
+    expect(result.error.message).toBe(
+      '"statusPurposes" must be an array of strings.'
+    )
+  })
+
+  it('should accept a one-element array "type" on an entry', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': ['https://www.w3.org/ns/credentials/v2'],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: ['BitstringStatusListEntry'],
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyStatusListCredential: async () => ({ verified: true })
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.verified).toBe(true)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0].status).toBe(false)
+  })
+
   it('should reject a non-function verifyStatusListCredential', async () => {
     const result: any = await checkStatus({
       credential: { credentialStatus: {} },
