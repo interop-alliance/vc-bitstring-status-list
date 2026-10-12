@@ -1,5 +1,13 @@
 # @interop/vc-bitstring-status-list ChangeLog
 
+## 3.4.0 - TBD
+
+### Changed
+
+- A `credentialStatus` entry whose `type` array includes
+  `BitstringStatusListEntry` alongside other types is accepted as a Bitstring
+  entry. Previously only a one-element array matched.
+
 ## 3.3.0 - 2026-10-11
 
 ### Added

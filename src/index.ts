@@ -568,7 +568,7 @@ function _isObject({ credential }: { credential?: any }): void {
 
 /**
  * Whether a `credentialStatus` entry is a `BitstringStatusListEntry`. The
- * `type` may be the string or a one-element array holding it.
+ * `type` may be the string or an array that includes it.
  */
 function _isBitstringEntry(credentialStatus: any): boolean {
   if (!(credentialStatus && typeof credentialStatus === 'object')) {
@@ -576,7 +576,7 @@ function _isBitstringEntry(credentialStatus: any): boolean {
   }
   const { type } = credentialStatus
   if (Array.isArray(type)) {
-    return type.length === 1 && type[0] === BSL_ENTRY_TYPE
+    return type.includes(BSL_ENTRY_TYPE)
   }
   return type === BSL_ENTRY_TYPE
 }

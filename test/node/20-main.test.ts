@@ -884,6 +884,39 @@ describe('checkStatus', () => {
     expect(result.results[0].status).toBe(false)
   })
 
+  it('should accept an entry whose "type" array includes other types', async () => {
+    const statusVC = await createMockBitstringStatusListCredential({
+      statusPurpose: 'revocation',
+      documentLoader
+    })
+    documents.set(statusVC.id, statusVC)
+    const credential = {
+      '@context': ['https://www.w3.org/ns/credentials/v2'],
+      id: 'urn:uuid:a0418a78-7924-11ea-8a23-10bf48838a41',
+      type: ['VerifiableCredential', 'example:TestCredential'],
+      credentialSubject: {
+        id: 'urn:uuid:4886029a-7925-11ea-9274-10bf48838a41'
+      },
+      credentialStatus: {
+        id: 'https://example.com/status/1#67342',
+        type: ['example:ExtensionEntry', 'BitstringStatusListEntry'],
+        statusPurpose: 'revocation',
+        statusListIndex: '67342',
+        statusListCredential: statusVC.id
+      },
+      issuer: statusVC.issuer
+    }
+    const result: any = await checkStatus({
+      credential,
+      documentLoader,
+      verifyStatusListCredential: async () => ({ verified: true })
+    })
+    expect(result.error).toBeUndefined()
+    expect(result.verified).toBe(true)
+    expect(result.results).toHaveLength(1)
+    expect(result.results[0].status).toBe(false)
+  })
+
   it('should reject a non-function verifyStatusListCredential', async () => {
     const result: any = await checkStatus({
       credential: { credentialStatus: {} },
